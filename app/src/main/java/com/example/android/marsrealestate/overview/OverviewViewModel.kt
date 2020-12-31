@@ -20,23 +20,24 @@ package com.example.android.marsrealestate.overview
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.android.marsrealestate.network.MarsApi
 import com.example.android.marsrealestate.network.MarsProperty
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
  * The [ViewModel] that is attached to the [OverviewFragment].
  */
+
+enum class MarsApiStatus { LOADING, ERROR, DONE }
+
 class OverviewViewModel : ViewModel() {
 
     // The internal MutableLiveData String that stores the status of the most recent request
-    private val _status = MutableLiveData<String>()
+    private val _status = MutableLiveData<MarsApiStatus>()
 
     // The external immutable LiveData for the request status String
-    val status: LiveData<String>
+    val status: LiveData<MarsApiStatus>
         get() = _status
 
     private val _properties = MutableLiveData<List<MarsProperty>>()
@@ -44,8 +45,8 @@ class OverviewViewModel : ViewModel() {
         get() =_properties
 
 
-    private var viewModelJob = Job()
-    private val coroutineScope = CoroutineScope(viewModelJob + Dispatchers.Main)
+//    private var viewModelJob = Job()
+//    private val coroutineScope = CoroutineScope(viewModelJob + Dispatchers.Main)
     /**
      * Call getMarsRealEstateProperties() on init so we can display status immediately.
      */
@@ -58,30 +59,20 @@ class OverviewViewModel : ViewModel() {
      * Sets the value of the status LiveData to the Mars API status.
      */
     private fun getMarsRealEstateProperties() {
-
-        coroutineScope.launch {
-
-            var getPropertiesDeferred = MarsApi.RetrofitService.getProperties()
+        viewModelScope.launch {
+            _status.value = MarsApiStatus.LOADING
             try {
-                var listResult = getPropertiesDeferred
-                _status.value = "Success: ${listResult.size} Mars properties retrieved"
-                if(listResult.size > 0)
-                {
-                    _properties.value = listResult
-                }
-            }
-            catch (ex :Exception)
-            {
-                _status.value = "Failure: " + ex.message
+                _properties.value = MarsApi.RetrofitService.getProperties()
+                _status.value = MarsApiStatus.DONE
+            } catch (e: Exception) {
+                _status.value = MarsApiStatus.ERROR
+                _properties.value = ArrayList()
             }
         }
-
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        viewModelJob.cancel()
-    }
+
+
 }
 
 
