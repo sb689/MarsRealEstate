@@ -45,19 +45,26 @@ class OverviewViewModel : ViewModel() {
         get() =_properties
 
 
-//    private var viewModelJob = Job()
-//    private val coroutineScope = CoroutineScope(viewModelJob + Dispatchers.Main)
-    /**
-     * Call getMarsRealEstateProperties() on init so we can display status immediately.
-     */
+    private val _navigateToSelectedProperty = MutableLiveData<MarsProperty>()
+    val navigateToSelectedProperty: LiveData<MarsProperty>
+        get() = _navigateToSelectedProperty
+
+
     init {
         getMarsRealEstateProperties()
     }
 
 
-    /**
-     * Sets the value of the status LiveData to the Mars API status.
-     */
+    fun displayPropertyDetails(marsProperty: MarsProperty)
+    {
+       _navigateToSelectedProperty.value = marsProperty
+    }
+
+    fun displayPropertyDetailsComplete()
+    {
+        _navigateToSelectedProperty.value = null
+    }
+
     private fun getMarsRealEstateProperties() {
         viewModelScope.launch {
             _status.value = MarsApiStatus.LOADING
